@@ -43,8 +43,8 @@ croscin.IME = function() {
   self.kPhrasesDatabase = 'croscinPhrasesDatabase';
 
   self.pref = {
-    im_default: 'Noseeing',
-    im_enabled_list: ['Noseeing'],
+    im_default: '',
+    im_enabled_list: [],
     support_non_chromeos: true,
     quick_punctuations: true,
     related_text: false,
@@ -72,7 +72,7 @@ croscin.IME = function() {
   // Core functions
   self.Commit = function(text) {
     // TODO(hungte) fixme when gen_inp has fixed this.
-    if (typeof(text) != typeof('')) {
+    if (text && typeof(text) != typeof('')) {
       text = text[0];
       self.log("croscin.Commit: WARNING: input text is not a simple string.");
     }
@@ -193,7 +193,11 @@ croscin.IME = function() {
       self.log('SetCandidatesWindowProperty(' + name + ', ' + value + ')');
     }
     arg.properties = properties;
-    //self.ime_api.setCandidateWindowProperties(arg);
+    self.ime_api.setCandidateWindowProperties(arg)
+      .then(() => {
+      })
+      .catch((error) => {
+      });
   }
 
   self.InitializeUI = function() {
@@ -394,8 +398,6 @@ croscin.IME = function() {
             self.log("croscin.LoadTable: fetch failed");
         }
         const content = await response.text();
-        //jscin.install_input_method(null, content, {builtin: true});
-        //self.ActivateInputMethod('boshiamy');
         return content;
     }
     catch (error) {
@@ -418,30 +420,6 @@ croscin.IME = function() {
     catch (error) {
         self.log("catch error=", error);
     }
-        /*
-      .then(response => {
-        self.log("response");
-        if (!response.ok) {
-            self.log("croscin.LoadExtensionResource: fetch failed");
-        }
-        return response.json();
-      })
-      .then(data => {
-        self.log("croscin.LoadExtensionResource: fetch data=", data);
-        self.LoadTable("tables/" + data.boshiamy);
-      })
-      .catch(error => {
-        self.log("croscin.LoadExtensionResource: error=", error);
-      });
-      */
-    /*
-    if (xhr.readyState != 4 || xhr.status != 200) {
-      self.log("croscin.LoadExtensionResource: failed to fetch:", url);
-      return null;
-    }
-    */
-    //return response.json();
-    return null;
   }
 
   self.BuildCharToKeyMap = function(data) {
@@ -487,15 +465,13 @@ croscin.IME = function() {
       jscin.install_input_method(null, content, {builtin: true});
     }
 
-    /*
     // Load phrases
     var phrases = jscin.readLocalStorage(self.kPhrasesDatabase, undefined);
     if (reload || !phrases) {
-      phrases = JSON.parse(self.LoadExtensionResource("tables/tsi.json"));
+      phrases = JSON.parse(await self.LoadExtensionResource("tables/tsi.json"));
       jscin.writeLocalStorage(self.kPhrasesDatabase, phrases);
     }
     self.phrases = phrases;
-    */
   }
 
   self.LoadPreferences = function() {
@@ -720,11 +696,9 @@ croscin.IME = function() {
 
     // Start the default input method.
     self.LoadPreferences();
-    self.ActivateInputMethod('Noseeing');
-    //self.ActivateInputMethod(self.pref.im_default);
+    self.ActivateInputMethod(self.pref.im_default);
   }
 
-  //console.log("croscin.js Initialize()");
   Initialize();
 };
 
