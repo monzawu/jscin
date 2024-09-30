@@ -33,8 +33,7 @@
         "input_api/ime_event.js",
         "input_api/impl_chromeext.js",
         "jscin/jscin.js",
-        "content.js",
-        "croscin.js"
+        "content.js"
       ],
       "run_at": "document_idle",
       "all_frames": true,
@@ -60,8 +59,7 @@
     "storage",
     "input",
     "unlimitedStorage",
-    "tabs",
-    "activeTab"
+    "tabs"
   ],
   "action": {
     "default_icon": {
@@ -69,7 +67,6 @@
     },
     "default_title": "__MSG_manifestName__",
     "default_popup": "input_api/menu.html"
-    //"default_popup": "options/options.html"
   },
   "content_security_policy": {},
   "host_permissions": [
