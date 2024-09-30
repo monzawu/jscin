@@ -14,7 +14,7 @@ jscin.external = {
   cmd_keystroke: 'keystroke',
 
   id_any: '*',
-  id_ime: localStorage['jscin.external.id_ime'] ||
+  id_ime: chrome.storage.local['jscin.external.id_ime'] ||
           'cdkhibgadomdghgnknpmgegpjjmfecfk',
 
   _debug: false,

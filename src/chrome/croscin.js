@@ -8,7 +8,7 @@
 /**
  * The root namespace.
  */
-
+console.log("init croscin.js");
 var croscin = {};
 
 /**
@@ -19,7 +19,7 @@ croscin.IME = function() {
   var self = this;
 
   // TODO(hungte) Make this a real pref.
-  self.debug = jscin.readLocalStorage('debug', false);
+  self.debug = jscin.readLocalStorage('debug', true);
 
   // The engine ID must match input_components.id in manifest file.
   self.kEngineId = 'cros_cin';
@@ -43,8 +43,8 @@ croscin.IME = function() {
   self.kPhrasesDatabase = 'croscinPhrasesDatabase';
 
   self.pref = {
-    im_default: '',
-    im_enabled_list: [],
+    im_default: 'Noseeing',
+    im_enabled_list: ['Noseeing'],
     support_non_chromeos: true,
     quick_punctuations: true,
     related_text: false,
@@ -193,7 +193,7 @@ croscin.IME = function() {
       self.log('SetCandidatesWindowProperty(' + name + ', ' + value + ')');
     }
     arg.properties = properties;
-    self.ime_api.setCandidateWindowProperties(arg);
+    //self.ime_api.setCandidateWindowProperties(arg);
   }
 
   self.InitializeUI = function() {
@@ -258,6 +258,10 @@ croscin.IME = function() {
   }
 
   self.UpdateCandidates = function(candidate_list, labels) {
+    if (candidate_list === undefined) {
+        self.log("candidate_list undefined");
+        return;
+    }
     self.log("croscin.UpdateCandidates: elements = " + candidate_list.length +
              ", labels = " + labels);
     if (candidate_list.length > 0) {
@@ -314,6 +318,7 @@ croscin.IME = function() {
   }
 
   self.ActivateInputMethod = function(name) {
+    self.log("ActivateInputMethod enter");
     if (name && name == self.im_name) {
       self.log("croscin.ActivateInputMethod: already activated:", name);
       self.UpdateMenu();
@@ -355,6 +360,7 @@ croscin.IME = function() {
   }
 
   self.UpdateMenu = function() {
+    /*
     var menu_items = [];
 
     self.pref.im_enabled_list.forEach(function (name) {
@@ -375,20 +381,67 @@ croscin.IME = function() {
     var arg = self.GetEngineArg();
     arg['items'] = menu_items;
     self.ime_api.setMenuItems(arg);
+    */
   }
 
-  self.LoadExtensionResource = function(url) {
-    var xhr = new XMLHttpRequest();
+  self.LoadTable = async function(url) {
     if (url.indexOf('://') < 0)
-      url = chrome.extension.getURL(url);
+      url = chrome.runtime.getURL(url);
+    self.log("croscin.LoadTable:", url);
+    try {
+        const response = await fetch(url);
+        if (!response.ok) {
+            self.log("croscin.LoadTable: fetch failed");
+        }
+        const content = await response.text();
+        //jscin.install_input_method(null, content, {builtin: true});
+        //self.ActivateInputMethod('boshiamy');
+        return content;
+    }
+    catch (error) {
+        self.log("catch error=", error);
+    }
+  }
+
+  self.LoadExtensionResource = async function(url) {
+    if (url.indexOf('://') < 0)
+      url = chrome.runtime.getURL(url);
     self.log("croscin.LoadExtensionResource:", url);
-    xhr.open("GET", url, false);
-    xhr.send();
+    try {
+        const response = await fetch(url);
+        if (!response.ok) {
+            self.log("croscin.LoadExtensionResource: fetch failed");
+        }
+        const json = await response.text();
+        return json;
+    }
+    catch (error) {
+        self.log("catch error=", error);
+    }
+        /*
+      .then(response => {
+        self.log("response");
+        if (!response.ok) {
+            self.log("croscin.LoadExtensionResource: fetch failed");
+        }
+        return response.json();
+      })
+      .then(data => {
+        self.log("croscin.LoadExtensionResource: fetch data=", data);
+        self.LoadTable("tables/" + data.boshiamy);
+      })
+      .catch(error => {
+        self.log("croscin.LoadExtensionResource: error=", error);
+      });
+      */
+    /*
     if (xhr.readyState != 4 || xhr.status != 200) {
       self.log("croscin.LoadExtensionResource: failed to fetch:", url);
       return null;
     }
-    return xhr.responseText;
+    */
+    //return response.json();
+    return null;
   }
 
   self.BuildCharToKeyMap = function(data) {
@@ -413,8 +466,8 @@ croscin.IME = function() {
     return map;
   }
 
-  self.LoadBuiltinTables = function(reload) {
-    var list = self.LoadExtensionResource("tables/builtin.json");
+  self.LoadBuiltinTables = async function(reload) {
+    var list = await self.LoadExtensionResource("tables/builtin.json");
     if (!list) {
       self.log("croscin.LoadBuiltinTables: No built-in tables.");
       return;
@@ -426,7 +479,7 @@ croscin.IME = function() {
         self.log("croscin.LoadBuiltinTables: skip loaded table:", table_name);
         continue;
       }
-      var content = self.LoadExtensionResource("tables/" + list[table_name]);
+      var content = await self.LoadTable("tables/" + list[table_name]);
       if (!content) {
         self.log("croscin.LoadBuiltinTables: Failed to load:", table_name);
         continue;
@@ -434,6 +487,7 @@ croscin.IME = function() {
       jscin.install_input_method(null, content, {builtin: true});
     }
 
+    /*
     // Load phrases
     var phrases = jscin.readLocalStorage(self.kPhrasesDatabase, undefined);
     if (reload || !phrases) {
@@ -441,6 +495,7 @@ croscin.IME = function() {
       jscin.writeLocalStorage(self.kPhrasesDatabase, phrases);
     }
     self.phrases = phrases;
+    */
   }
 
   self.LoadPreferences = function() {
@@ -647,11 +702,11 @@ croscin.IME = function() {
     self.notifyConfigChanged();
   }
 
-  function Initialize() {
+  async function Initialize() {
     // Initialization.
     var version = chrome.runtime.getManifest().version;
     var reload = (version !== jscin.getLocalStorageVersion());
-    self.LoadBuiltinTables(reload);
+    await self.LoadBuiltinTables(reload);
     if (reload) {
       jscin.reloadNonBuiltinTables();
       jscin.setLocalStorageVersion(version);
@@ -665,9 +720,11 @@ croscin.IME = function() {
 
     // Start the default input method.
     self.LoadPreferences();
-    self.ActivateInputMethod(self.pref.im_default);
+    self.ActivateInputMethod('Noseeing');
+    //self.ActivateInputMethod(self.pref.im_default);
   }
 
+  //console.log("croscin.js Initialize()");
   Initialize();
 };
 
@@ -844,5 +901,5 @@ croscin.IME.prototype.registerEventHandlers = function() {
     });
   }
 
-  window.jscin = jscin;
+  //window.jscin = jscin;
 };

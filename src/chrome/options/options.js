@@ -8,9 +8,44 @@
 var table_loading = {};
 
 // this is dirty hack
-var bgPage = chrome.extension.getBackgroundPage();
-var jscin = bgPage.jscin;
-var instance = bgPage.croscin.instance;
+//var bgPage = chrome.extension.getBackgroundPage();
+//var jscin = bgPage.jscin;
+//var instance = bgPage.croscin.instance;
+
+var jscin = {};
+var instance = {};
+console.log("jscin default empty 4");
+/*
+const port = chrome.runtime.connect({name: "keep-alive"});
+console.log("options: port=", port);
+port.postMessage({data: 'test'});
+*/
+chrome.runtime.sendMessage({"action": "ping"}, (response) => {
+  console.log("options: get response");
+  jscin = response.jscin;
+  //instance = response.croscin;
+  console.log("options: check ", jscin.IMKEY_DELAY);
+});
+
+instance.prefGetSupportNonChromeOS = function () {
+  return true;
+}
+instance.prefGetDefaultEnabled = function() {
+  return true;
+}
+instance.prefGetQuickPunctuations = function() {
+  return true;
+}
+instance.prefGetRelatedText = function() {
+  return false;
+}
+instance.getDefaultModule = function() {
+  return 'GenInp2';
+}
+instance.getAvailableModules = function() {
+  return ['GenInp', 'GenInp2'];
+}
+
 
 _ = chrome.i18n.getMessage;
 
@@ -217,7 +252,7 @@ function init() {
 }
 
 function LoadExtensionResource(url) {
-  var rsrc = chrome.extension.getURL(url);
+  var rsrc = chrome.runtime.getURL(url);
   var xhr = new XMLHttpRequest();
   console.log("LoadExtensionResource:", url);
   xhr.open("GET", rsrc, false);
@@ -518,6 +553,7 @@ function addCinTableToList(name, metadata, list_id, do_insert) {
 }
 
 function loadCinTables() {
+  /*
   var metadatas = jscin.getTableMetadatas();
   var tables = getEnabledList();
   tables.forEach(function (name) {
@@ -528,6 +564,7 @@ function loadCinTables() {
       addCinTableToList(name, metadatas[name], '#available_im_list');
     }
   }
+  */
 }
 
 function removeCinTable(name) {

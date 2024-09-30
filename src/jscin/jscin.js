@@ -8,7 +8,7 @@
 /**
  * The root namespace for JsCIN.
  */
-
+console.log("init jscin.js");
 var jscin = {
 
   // -------------------------------------------------------------------
@@ -114,7 +114,7 @@ var jscin = {
   addons: [],
   input_methods: {},
 
-  debug: false,
+  debug: true,
 
   // -------------------------------------------------------------------
   // Utilities

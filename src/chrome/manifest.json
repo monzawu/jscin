@@ -10,7 +10,7 @@
     "128": "icons/icon128.png"
   },
   "background": {
-    "page": "background.html"
+    "service_worker": "service_worker.js"
   },
   "options_page": "options/options.html",
   "input_components": [
@@ -33,7 +33,8 @@
         "input_api/ime_event.js",
         "input_api/impl_chromeext.js",
         "jscin/jscin.js",
-        "content.js"
+        "content.js",
+        "croscin.js"
       ],
       "run_at": "document_idle",
       "all_frames": true,
@@ -56,9 +57,11 @@
     }
   ],
   "permissions": [
+    "storage",
     "input",
     "unlimitedStorage",
-    "tabs"
+    "tabs",
+    "activeTab"
   ],
   "action": {
     "default_icon": {
@@ -66,6 +69,7 @@
     },
     "default_title": "__MSG_manifestName__",
     "default_popup": "input_api/menu.html"
+    //"default_popup": "options/options.html"
   },
   "content_security_policy": {},
   "host_permissions": [
