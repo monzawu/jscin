@@ -20,12 +20,14 @@ const port = chrome.runtime.connect({name: "keep-alive"});
 console.log("options: port=", port);
 port.postMessage({data: 'test'});
 */
+/*
 chrome.runtime.sendMessage({"action": "ping"}, (response) => {
   console.log("options: get response");
-  jscin = response.jscin;
+  //jscin = response.jscin;
   //instance = response.croscin;
-  console.log("options: check ", jscin.IMKEY_DELAY);
+  //console.log("options: check ", jscin.IMKEY_DELAY);
 });
+*/
 
 instance.prefGetSupportNonChromeOS = function () {
   return true;
@@ -55,8 +57,16 @@ function SetElementsText() {
   }
 }
 
-var BuiltinIMs = JSON.parse(
-    LoadExtensionResource("tables/builtin.json"));
+var BuiltinIMs = {};
+var setting_options = {};
+
+async function initBuiltinIMs() {
+    BuiltinIMs = JSON.parse(await LoadExtensionResourceBlocking("tables/builtin.json"));
+}
+
+async function initSettingOptions() {
+  setting_options = JSON.parse(await LoadExtensionResourceBlocking("options/builtin_options.json"));
+}
 
 function init() {
   SetElementsText("optionCaption", "optionInputMethodTables",
@@ -99,7 +109,7 @@ function init() {
 
   // TODO(hungte) we should autodetect again after source is specified.
   var select = $("#add_table_setting");
-  var setting_options = JSON.parse(LoadExtensionResource("options/builtin_options.json"));
+  //var setting_options = JSON.parse(LoadExtensionResourceBlocking("options/builtin_options.json"));
   select.empty();
   for (var i in setting_options) {
     var setting = setting_options[i];
@@ -251,17 +261,25 @@ function init() {
   $('#start_test_area').button();
 }
 
-function LoadExtensionResource(url) {
-  var rsrc = chrome.runtime.getURL(url);
-  var xhr = new XMLHttpRequest();
+async function LoadExtensionResource(url) {
+  if (url.indexOf('://') < 0)
+    url = chrome.runtime.getURL(url);
   console.log("LoadExtensionResource:", url);
-  xhr.open("GET", rsrc, false);
-  xhr.send();
-  if (xhr.readyState != 4 || xhr.status != 200) {
-    console.log("LoadExtensionResource: failed to fetch:", url);
-    return null;
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+        console.log("LoadExtensionResource: fetch failed");
+    }
+    const content = await response.text();
+    return content;
   }
-  return xhr.responseText;
+  catch (error) {
+    console.log("catch error=", error);
+  } 
+}
+
+async function LoadExtensionResourceBlocking(url) {
+    return await LoadExtensionResource(url);
 }
 
 function removeFileExtension(filename) {
@@ -424,8 +442,8 @@ function setAddTableStatus(status, error) {
 }
 
 function getSettingOption(data) {
-  var setting_options = JSON.parse(
-      LoadExtensionResource("options/builtin_options.json"));
+  //var setting_options = JSON.parse(
+  //    LoadExtensionResourceBlocking("options/builtin_options.json"));
   var setting = setting_options[
       document.getElementById("add_table_setting").selectedIndex];
   if (setting.auto_detect) {
@@ -589,4 +607,6 @@ function updateEnabledList(enabled) {
   instance.prefSetEnabledList(enabled);
 }
 
+initBuiltinIMs();
+initSettingOptions();
 $(init);
