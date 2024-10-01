@@ -388,23 +388,6 @@ croscin.IME = function() {
     */
   }
 
-  self.LoadTable = async function(url) {
-    if (url.indexOf('://') < 0)
-      url = chrome.runtime.getURL(url);
-    self.log("croscin.LoadTable:", url);
-    try {
-        const response = await fetch(url);
-        if (!response.ok) {
-            self.log("croscin.LoadTable: fetch failed");
-        }
-        const content = await response.text();
-        return content;
-    }
-    catch (error) {
-        self.log("catch error=", error);
-    }
-  }
-
   self.LoadExtensionResource = async function(url) {
     if (url.indexOf('://') < 0)
       url = chrome.runtime.getURL(url);
@@ -457,7 +440,7 @@ croscin.IME = function() {
         self.log("croscin.LoadBuiltinTables: skip loaded table:", table_name);
         continue;
       }
-      var content = await self.LoadTable("tables/" + list[table_name]);
+      var content = await self.LoadExtensionResource("tables/" + list[table_name]);
       if (!content) {
         self.log("croscin.LoadBuiltinTables: Failed to load:", table_name);
         continue;
