@@ -19,18 +19,23 @@ importScripts('jscin/lz-string.js','jscin/jscin.js' ,'jscin/base_inp.js' ,'jscin
 croscin.instance = new croscin.IME;
 
 
-/*
 chrome.runtime.onMessage.addListener(
   function(request, sender, sendResponse) {
-    console.log("IMKEY_DELAY=", jscin.IMKEY_DELAY);
     console.log(sender.tab ?
                 "from a content script:" + sender.tab.url :
                 "from the extension");
-    //if (request.action === "ping")
-   // console.log("IMKEY_DELAY=", jscin.IMKEY_DELAY);
-    sendResponse({jscin: jscin, croscin: croscin.instance});
-
+    switch (request.action) {
+        case "getServiceWorkerData":
+            sendResponse({pref: croscin.instance.pref, metadatas: jscin.getTableMetadatas()});
+            break;
+        case "setEnabledList":
+            let new_list = request.data;
+            croscin.instance.prefSetEnabledList(new_list);
+            break;
+        case "notifyConfigChanged":
+            croscin.instance.notifyConfigChanged();
+            croscin.instance.ActivateInputMethod(croscin.instance.pref.im_default);
+    }
     return true;
   }
 );
-  */

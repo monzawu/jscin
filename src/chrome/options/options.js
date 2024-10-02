@@ -14,37 +14,54 @@ var table_loading = {};
 
 var jscin = {};
 var instance = {};
+var pref = {};
+var metadatas = {};
 console.log("jscin default empty 4");
 /*
 const port = chrome.runtime.connect({name: "keep-alive"});
 console.log("options: port=", port);
 port.postMessage({data: 'test'});
-*/
-/*
-chrome.runtime.sendMessage({"action": "ping"}, (response) => {
+
+chrome.runtime.sendMessage({"action": "getServiceWorkerData"}, (response) => {
   console.log("options: get response");
-  //jscin = response.jscin;
-  //instance = response.croscin;
-  //console.log("options: check ", jscin.IMKEY_DELAY);
+  pref = response.pref;
+  metadatas = response.metadatas;
 });
 */
 
+function notifyConfigChanged() {
+  chrome.runtime.sendMessage({"action": "notifyConfigChanged"});
+}
+function updateEnabledList(enabled) {
+  chrome.runtime.sendMessage({"action": "setEnabledList", "data": enabled});
+}
+
+function getTableMetadatas() {
+  return metadatas;
+}
+
+function getEnabledList() {
+  return pref.im_enabled_list;
+}
+
 instance.prefGetSupportNonChromeOS = function () {
-  return true;
+  return pref.support_non_chromeos;
 }
 instance.prefGetDefaultEnabled = function() {
-  return true;
+  return pref.default_enabled;
 }
 instance.prefGetQuickPunctuations = function() {
-  return true;
+  return pref.quick_punctuations;
 }
 instance.prefGetRelatedText = function() {
-  return false;
+  return pref.related_text;
 }
 instance.getDefaultModule = function() {
+  //return jscin.getDefaultModuleName();
   return 'GenInp2';
 }
 instance.getAvailableModules = function() {
+  //return jscin.get_registered_modules();
   return ['GenInp', 'GenInp2'];
 }
 
@@ -59,6 +76,54 @@ function SetElementsText() {
 
 var BuiltinIMs = {};
 var setting_options = {};
+
+function sendMessageAsync(message) {
+  return new Promise((resolve, reject) => {
+    chrome.runtime.sendMessage(message, (response) => {
+      if (chrome.runtime.lastError) {
+        // Reject the Promise if an error occurs
+        reject(chrome.runtime.lastError);
+      } else {
+        // Resolve the Promise with the response
+        resolve(response);
+      }
+    });
+  });
+}
+
+async function getServiceWorkerData() {
+  try {
+    // Wait for the response from the service worker
+    const response = await sendMessageAsync({ action: "getServiceWorkerData" });
+
+    // Now process the response synchronously
+    console.log("options: got response");
+    pref = response.pref;
+    metadatas = response.metadatas;
+
+    // Further processing with pref and metadatas
+    console.log("Preferences:", pref);
+    console.log("Metadatas:", metadatas);
+    loadCinTables();
+  } catch (error) {
+    console.error("Failed to get service worker data:", error);
+  }
+}
+/*
+async function initServiceWorkerData() {
+    await chrome.runtime.sendMessage({"action": "getServiceWorkerData"}, (response) => {
+        console.log("options: get response");
+        pref = response.pref;
+        metadatas = response.metadatas;
+    });
+}
+*/
+
+async function preInit() {
+    await getServiceWorkerData();
+    await initBuiltinIMs();
+    await initSettingOptions();
+}
 
 async function initBuiltinIMs() {
     BuiltinIMs = JSON.parse(await LoadExtensionResourceBlocking("tables/builtin.json"));
@@ -105,7 +170,7 @@ function init() {
   }).disableSelection();
   $("#accordion").accordion({heightStyle: "content"});
 
-  loadCinTables();
+  //loadCinTables();
 
   // TODO(hungte) we should autodetect again after source is specified.
   var select = $("#add_table_setting");
@@ -571,9 +636,14 @@ function addCinTableToList(name, metadata, list_id, do_insert) {
 }
 
 function loadCinTables() {
-  /*
-  var metadatas = jscin.getTableMetadatas();
+  console.log("loadCinTables");
+  var metadatas = getTableMetadatas();
   var tables = getEnabledList();
+  if (!tables) {
+      console.log("async read not ready");
+    return;
+  }
+
   tables.forEach(function (name) {
     addCinTableToList(name, metadatas[name], '#enabled_im_list');
   });
@@ -582,7 +652,6 @@ function loadCinTables() {
       addCinTableToList(name, metadatas[name], '#available_im_list');
     }
   }
-  */
 }
 
 function removeCinTable(name) {
@@ -594,19 +663,5 @@ function removeCinTable(name) {
   jscin.deleteTable(name);
 }
 
-function notifyConfigChanged() {
-  instance.notifyConfigChanged();
-  instance.ActivateInputMethod(instance.pref.im_default);
-}
-
-function getEnabledList() {
-  return instance.pref.im_enabled_list;
-}
-
-function updateEnabledList(enabled) {
-  instance.prefSetEnabledList(enabled);
-}
-
-initBuiltinIMs();
-initSettingOptions();
+preInit();
 $(init);
