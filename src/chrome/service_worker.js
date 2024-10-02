@@ -8,6 +8,15 @@ chrome.runtime.onConnect.addListener((port) => {
   
 });
 */
+chrome.action.onClicked.addListener(async (tab) => {
+    try {
+        await initLocalStorage;
+    }
+    catch (e) {
+
+    }
+});
+
 console.log("SW: enter");
 
 //importScripts('jscin/jscin.js', 'jscin.ext/external.js', 'croscin.js', 'jscin/cin_parser.js', 'jscin/gen_inp.js', 'jscin/gen_inp2.js');
@@ -18,12 +27,12 @@ importScripts('jscin/lz-string.js','jscin/jscin.js' ,'jscin/base_inp.js' ,'jscin
 //import 'croscin.js';
 croscin.instance = new croscin.IME;
 
-
 chrome.runtime.onMessage.addListener(
   function(request, sender, sendResponse) {
     console.log(sender.tab ?
                 "from a content script:" + sender.tab.url :
                 "from the extension");
+    console.log("action=", request.action);
     switch (request.action) {
         case "getServiceWorkerData":
             sendResponse({pref: croscin.instance.pref, metadatas: jscin.getTableMetadatas()});
@@ -35,6 +44,11 @@ chrome.runtime.onMessage.addListener(
         case "notifyConfigChanged":
             croscin.instance.notifyConfigChanged();
             croscin.instance.ActivateInputMethod(croscin.instance.pref.im_default);
+            break;
+        case "installInputMethod":
+            let result = jscin.install_input_method(request.name, request.table_source, request.metadata);
+            sendResponse({result: result});
+            break;
     }
     return true;
   }

@@ -29,6 +29,34 @@ chrome.runtime.sendMessage({"action": "getServiceWorkerData"}, (response) => {
 });
 */
 
+function install_input_method(name, table_source, metadata) {
+    chrome.runtime.sendMessage({"action": "installInputMethod", "name": name, "table_source": table_source, "metadata": metadata}, (response) => {
+        console.log("options: get response");
+        //update UI again
+        let result = response.result;
+        // Update the UI
+        getServiceWorkerData();
+        /*
+        if (result[0]) {
+            // We must reload metadata, since it may be modified in
+            // jscin.install_input_method.
+            var metadata = getTableMetadatas()[name];
+            addCinTableToList(name, metadata, '#enabled_im_list', true);
+            setAddTableStatus("Table added successfully", false);
+            instance.prefInsertEnabledInputMethod(name);
+            notifyConfigChanged();
+            if ($('#save_to_drive').is(':checked')) {
+                SaveToDrive(metadata.ename, content);
+            }
+        } else {
+            var msg = result[1];
+            setAddTableStatus("Could not parse cin file. " + msg, true);
+        }
+        */
+    });
+    //return [true, ""];
+}
+
 function notifyConfigChanged() {
   chrome.runtime.sendMessage({"action": "notifyConfigChanged"});
 }
@@ -131,6 +159,22 @@ async function initBuiltinIMs() {
 
 async function initSettingOptions() {
   setting_options = JSON.parse(await LoadExtensionResourceBlocking("options/builtin_options.json"));
+  updateSettingsOptionUI();
+}
+
+function updateSettingsOptionUI() {
+  var select = $("#add_table_setting");
+  //var setting_options = JSON.parse(LoadExtensionResourceBlocking("options/builtin_options.json"));
+  select.empty();
+  for (var i in setting_options) {
+    var setting = setting_options[i];
+    var option = $("<option>", {"id": "option" + i});
+    option.text(setting.ename + ' ' + setting.cname);
+    if ("default" in setting && setting["default"]) {
+      option.attr("selected", "selected");
+    }
+    select.append(option);
+  }
 }
 
 function init() {
@@ -172,6 +216,7 @@ function init() {
 
   //loadCinTables();
 
+    /*
   // TODO(hungte) we should autodetect again after source is specified.
   var select = $("#add_table_setting");
   //var setting_options = JSON.parse(LoadExtensionResourceBlocking("options/builtin_options.json"));
@@ -185,6 +230,7 @@ function init() {
     }
     select.append(option);
   }
+  */
 
   $("#add_table_dialog").attr("title", _("optionAddTable"));
 
@@ -465,7 +511,7 @@ function addTable(content, url) {
   if (result[0]) {
     var data = result[1];
     name = data.metadata.ename;
-    var metadata = jscin.getTableMetadatas()[name];
+    var metadata = getTableMetadatas()[name];
     if (metadata) {
       if (!confirm("Do you wish to overwrite " + data.metadata.ename + "?")) {
         setAddTableStatus("Table not added", true);
@@ -475,24 +521,8 @@ function addTable(content, url) {
       }
     }
     // install_input_method will parse raw content again...
-    result = jscin.install_input_method(name, content,
+    result = install_input_method(name, content,
         { setting: getSettingOption(data), url: url });
-  }
-  // Update the UI
-  if (result[0]) {
-    // We must reload metadata, since it may be modified in
-    // jscin.install_input_method.
-    var metadata = jscin.getTableMetadatas()[name];
-    addCinTableToList(name, metadata, '#enabled_im_list', true);
-    setAddTableStatus("Table added successfully", false);
-    instance.prefInsertEnabledInputMethod(name);
-    notifyConfigChanged();
-    if ($('#save_to_drive').is(':checked')) {
-      SaveToDrive(metadata.ename, content);
-    }
-  } else {
-    var msg = result[1];
-    setAddTableStatus("Could not parse cin file. " + msg, true);
   }
 }
 
@@ -643,6 +673,10 @@ function loadCinTables() {
       console.log("async read not ready");
     return;
   }
+
+  console.log("loadCinTables clear dialog");
+  $('#enabled_im_list').empty();
+  $('#available_im_list').empty();
 
   tables.forEach(function (name) {
     addCinTableToList(name, metadatas[name], '#enabled_im_list');

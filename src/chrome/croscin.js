@@ -524,9 +524,11 @@ croscin.IME = function() {
                             self.pref.quick_punctuations);
     jscin.writeLocalStorage(self.kPrefDefaultEnabled,
                             self.pref.default_enabled);
+    self.log("preferences saved default=", self.pref.default_enabled);
     jscin.writeLocalStorage(self.kPrefRelatedText,
                             self.pref.related_text);
     self.log("preferences saved.");
+    jscin.onLocalStorageChanged();
   }
 
   self.prefInsertEnabledInputMethod = function (name) {
@@ -592,6 +594,7 @@ croscin.IME = function() {
     // write it directly.
     jscin.writeLocalStorage(self.kPrefDefaultEnabled,
                             self.pref.default_enabled);
+    jscin.onLocalStorageChanged();
   }
 
   self.getDefaultModule = function () {
@@ -663,6 +666,7 @@ croscin.IME = function() {
 
   async function Initialize() {
     // Initialization.
+    await initLocalStorage;
     var version = chrome.runtime.getManifest().version;
     var reload = (version !== jscin.getLocalStorageVersion());
     await self.LoadBuiltinTables(reload);

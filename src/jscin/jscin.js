@@ -9,6 +9,15 @@
  * The root namespace for JsCIN.
  */
 console.log("init jscin.js");
+
+const initLocalStorage = chrome.storage.local.get().then((items) => {
+    console.log("restore local storage from chrome.storage");
+    Object.assign(localStorage, items);
+    //console.log("assign storage ", items);
+    console.log("assign: default IM=", items['croscinPrefDefaultInputMethod']);
+});
+
+
 var jscin = {
 
   // -------------------------------------------------------------------
@@ -405,14 +414,27 @@ var jscin = {
     return typeof(LZString) != typeof(undefined);
   },
 
+  onLocalStorageChanged: function () {
+    console.log("onLocalStorageChanged, backup to chrome.storage.local");
+    Object.keys(localStorage).forEach(k => {
+        if (localStorage[k].length < 100) {
+            console.log("  backup pairs= ", k, ", ", localStorage[k]);
+        }
+        chrome.storage.local.set({[k]: localStorage[k]});
+    });
+  },
+
   readLocalStorage: function (key, default_value) {
+    console.log("readLocalStorage: ", key);
     if (typeof(localStorage) == typeof(undefined)) {
+      console.log("init empty localStorage");
       localStorage = {};
     }
     var data = localStorage[key];
     if (!data) {
       return default_value;
     }
+    /* disable lz
     if (data[0] == '!') {
       if (!jscin.hasLzString()) {
         jscin.error("LZ-String not available. Dropping storage key:", key);
@@ -420,16 +442,27 @@ var jscin = {
       }
       data = LZString.decompress(data.substr(1));
     }
-    return JSON.parse(data);
+    */
+    var parsed = {};
+    try {
+      parsed = JSON.parse(data);
+    }
+    catch (e) {
+        chrome.storage.local.clear();
+    }
+    return parsed;
   },
 
   writeLocalStorage: function (key, data) {
+    console.log("writeLocalStorage: ", key, "/", data);
     if (typeof(localStorage) == typeof(undefined)) {
       localStorage = {};
     }
     var val = JSON.stringify(data);
+    /* disable lz
     if (val.length > 100 && jscin.hasLzString())
       val = '!' + LZString.compress(val);
+    */
     localStorage[key] = val;
   },
 
@@ -441,6 +474,7 @@ var jscin = {
   },
 
   deleteLocalStorage: function (key) {
+    console.log("deleteLocalStorage: ", key);
     delete localStorage[key];
   },
 
